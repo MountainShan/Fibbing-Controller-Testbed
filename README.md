@@ -27,7 +27,7 @@ sudo python3 ./fibbing_controller.py <number of fake nodes>
  - configure a router, ex. R1
  > enable 
  > configure terminal 
-<copy the information to the console, the configure files: ./Configure/R1.cfg >
+copy the information to the console, the configure files: ./Configure/R1.cfg
 
  - configure a host
-<copy the information to the console, the configure files: ./Configure/hosts.cfg >
+copy the information to the console, the configure files: ./Configure/hosts.cfg
