@@ -1,7 +1,6 @@
 # Fibbing Controller testcode
 A Repo for implementing fibbing controller in gNS3 emulator
-![Topology] https://github.com/MountainShan/
-Fibbing-Controller-Testbed/blob/main/topology.png
+![Topology] https://github.com/MountainShan/Fibbing-Controller-Testbed/blob/main/topology.png
 ## gNS3 remote server install (from gNS3 website)
 cd /tmp
 curl https://raw.githubusercontent.com/GNS3/gns3-server/master/scripts/remote-install.sh > gns3-remote-install.sh
