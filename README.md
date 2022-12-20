@@ -3,18 +3,22 @@ A Repo for implementing fibbing controller in gNS3 emulator
 ![Topology](https://github.com/MountainShan/Fibbing-Controller-Testbed/blob/main/topology.png)
 ## gNS3 remote server install (from gNS3 website)
 > cd /tmp
+
 > curl https://raw.githubusercontent.com/GNS3/gns3-server/master/scripts/remote-install.sh > gns3-remote-install.sh
+
 > sudo bash gns3-remote-install.sh --with-iou --with-i386-repository
 
 ## gNS3 testbed
-> import project gNS3-cisco-fibbing-testbed.gns3project to gNS3 remote server.
-> install gNS3 client (Windows or Linux is OK)
+
+import project gNS3-cisco-fibbing-testbed.gns3project to gNS3 remote server.
+
+install gNS3 client (Windows or Linux is OK)
 
 ## How to run
 > sudo ./iface_setup.sh
 
 
-running gNS3, and start all devices
+Running gNS3, and start all devices
 
 
 > sudo python3 ./fibbing_controller.py <number of fake nodes>
