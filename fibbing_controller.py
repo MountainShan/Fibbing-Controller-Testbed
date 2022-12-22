@@ -22,8 +22,6 @@ class FibbingController():
         
         # OSPF information
         self.seq = 0x80002000
-        self.hidden_ip_address = {}
-        self.pre_check_time = time.time()
         return
     
     def pack_OSPF_message(self, parsed, lsa_message):
@@ -39,9 +37,9 @@ class FibbingController():
         self.seq += 1
         return msg
 
-    def Type_5_LSA_Message(self, age, state_id, adrouter, forward_ip):
+    def Type_5_LSA_Message(self, age, state_id, adrouter, forward_ip, metric):
         lsa_header = []
-        temp_link_info = OSPF_External_LSA(age=age, options=0x02, id=state_id, adrouter=adrouter, seq = self.seq, mask="255.255.255.255", metric=1, fwdaddr=forward_ip)
+        temp_link_info = OSPF_External_LSA(age=age, options=0x02, id=state_id, adrouter=adrouter, seq = self.seq, mask="255.255.255.255", metric=metric, fwdaddr=forward_ip)
         del(temp_link_info.chksum)
         temp_link_Fake_Acknowledge_Messageinfo = (temp_link_info.__class__(bytes(temp_link_info)))
         lsa_header.append(temp_link_info)
@@ -136,12 +134,12 @@ class FibbingController():
                         self.iface_sock_mapping[self.iface_R1].send(msg)
     
     # Function for inject Type 5 LSA message
-    def inject_lsa(self, age, target_ip_address, fake_link_ip_address, fake_router_id):
+    def inject_lsa(self, age, target_ip_address, fake_link_ip_address, fake_router_id, metric):
         age = age # 0 for insert, 3600 for remove (in second, reinstall every 3600 s)
         state_id = target_ip_address # 142.x.0.2 
         forward_ip = fake_link_ip_address # Fake link (next hop ip address)
         adrouter = fake_router_id # Fake router ID
-        self.Type_5_LSA_Message(age=age,state_id=state_id, adrouter=adrouter, forward_ip=forward_ip)
+        self.Type_5_LSA_Message(age=age,state_id=state_id, adrouter=adrouter, forward_ip=forward_ip, metric=metric)
         return 
         
     def main(self):
