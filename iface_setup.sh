@@ -11,8 +11,8 @@ for i in $(seq 1 $num_veth_pairs); do
     sudo ip link add phy_r_$i type veth peer name virt_r_$i
     sudo ip link set phy_r_$i up
     sudo ip link set virt_r_$i up
-    sudo ifconfig phy_r_$i promisc
-    sudo ifconfig virt_r_$i promisc
+    sudo ip link set phy_r_$i promisc on
+    sudo ip link set virt_r_$i promisc on
     for TOE_OPTION in $TOE_OPTIONS; do
         sudo /sbin/ethtool --offload phy_r_$i "$TOE_OPTION" off >/dev/null 2>&1
         sudo /sbin/ethtool --offload virt_r_$i "$TOE_OPTION" off >/dev/null 2>&1   

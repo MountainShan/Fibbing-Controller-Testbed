@@ -145,8 +145,7 @@ class FibbingController():
     def main(self):
         print ("Start Fibbing controller")
         print (" - Initializate proxy")
-        t = Thread(target = self.message_transfer)
-        t.setDaemon(True)
+        t = Thread(target = self.message_transfer, daemon=True)
         t.start()
         print (" - ..... wait 5 s")
         time.sleep(5)
@@ -154,12 +153,12 @@ class FibbingController():
         # input codes here
 
         # Waiting...
-        while (True):
-            try:
+        try:
+            while (True):
                 pass
-            except(KeyboardInterrupt):
-                print (" - Keyboard Interrupted, exit...")
-                break
+        except(KeyboardInterrupt):
+            print (" - Keyboard Interrupted, exit...")
+            return
 
 
 if ("__main__" == __name__):
