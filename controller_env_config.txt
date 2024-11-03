@@ -1,6 +1,6 @@
 # Controller 1
 NUM_FAKE_NODE=20
-CONTROLLER_ID=2
+CONTROLLER_ID=1
 
 # Controller 2
 NUM_FAKE_NODE=20
