@@ -1,18 +1,22 @@
 #!/usr/bin/python3
 
 from scapy.all import *
-from threading import Thread
+from threading import Thread, Event
 from subprocess import check_output, PIPE
 import socket
+import select
 import sys
 import time
 import yaml
+import os
+import subprocess
 load_contrib("ospf") 
 
 MULTICAST_MAC_ADDRESS = "01:00:5e:00:00:05"
 MULTICAST_IP_ADDRESS = "224.0.0.5"
 MASK_32 = "255.255.255.255"
 MASK_24 = "255.255.255.0"
+TIEMOUT = 1
 
 class Fibbing_Message_Handler(): 
     def pack_OSPF_message(self, seq, message, lsa_message):
@@ -88,7 +92,6 @@ class Fibbing_Message_Handler():
             message_list.append(Network_LSA.__class__(bytes(Network_LSA)))
         return message_list
 
-
     def Type_5_LSA_Message(self, info, seq, age, state_id, adrouter, forward_ip, metric):
         temp_link_info = OSPF_External_LSA(age=age, options=0x02, id=state_id, adrouter=adrouter, seq = self.seq, mask=MASK_32, metric=metric, fwdaddr=forward_ip)
         del(temp_link_info.chksum)
@@ -104,29 +107,66 @@ class Fibbing_Message_Handler():
     
 class Controller():
     def __init__ (self):
-        def sock_create(info):
+
+        def raw_sock_creator(intf):
+            subprocess.run(["ip", "link", "set", intf, "promisc", "on"])
             sock = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(ETH_P_ALL))
-            sock.bind((info['interface'], 0))
-            info["sockfd"] = sock
-            return
+            sock.bind((intf, 0))
+            return sock
+
+        def tunnel_sock_creator(intf, ip, port):
+            subprocess.run(["ip", "addr", "add",  "{}/24".format(ip), "dev", intf])
+            subprocess.run(["ip", "link", "set", intf, "promisc", "on"])
+            subprocess.run(["ip", "link", "set", "dev", intf, "mtu", "9000"])
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+            sock.bind((ip, port))
+            return sock
+
         self.fb_msg_handler = Fibbing_Message_Handler()
         self.seq = 0x80002000
         self.threads = {}
+        self._threads_loop_control = Event()
+        self.controller_id = os.environ['CONTROLLER_ID']
+        self.number_fake_node = int(os.environ['NUM_FAKE_NODE'])
+        
+        with open('/yaml/tunnel.yaml', 'r') as f:
+            self.tunnel = yaml.safe_load(f)
+        t = self.controller_id
+        self.tunnel[t]['sockfd'] = tunnel_sock_creator(self.tunnel[t]['interface'], self.tunnel[t]['ip_addr'], self.tunnel[t]['port'])
+        self.threads.setdefault("tunnel", Thread(target = self.tunnel_communication, daemon=True))        
 
-        with open("/etc/fibbing/config.yaml", "r") as f:
-            config = yaml.safe_load(f)
-        
-        self.number_fake_node = config["total_fake_nodes"]
-        self.fake = config["fake"]
-        self.real = config["real"]
-        sock_create(self.real)
-        sock_create(self.fake)
-        self.fake["router_id"] = "%d.%d.%d.%d"%(self.fake["router_id"],self.fake["router_id"],self.fake["router_id"],self.fake["router_id"])
-        self.real["router_id"] = "%d.%d.%d.%d"%(self.real["router_id"],self.real["router_id"],self.real["router_id"],self.real["router_id"])
+        with open('/yaml/{}.yaml'.format(self.controller_id), 'r') as f:
+            data = yaml.safe_load(f)
+        self.real = data['real']
+        self.real['sockfd'] = raw_sock_creator(self.real["interface"])
+        self.real["router_id"] = "{}.{}.{}.{}".format(self.real['router_id'], self.real['router_id'], self.real['router_id'], self.real['router_id'])
         self.threads.setdefault("real", Thread(target = self.real_network_message_handler, daemon=True))
+        self.fake = data['fake']
+        self.fake['sockfd'] = raw_sock_creator(self.fake['interface'])
+        self.fake["router_id"] = "{}.{}.{}.{}".format(self.fake['router_id'], self.fake['router_id'], self.fake['router_id'], self.fake['router_id'])
         self.threads.setdefault("fake", Thread(target = self.fake_netwokr_message_handler, daemon=True))
-        self._threads_loop_control = True
         
+    def tunnel_communication(self):
+        fd = self.tunnel[self.controller_id]
+        inputs = [fd]
+        others = { v['ip_addr']:{'id':k, 'exist':False} for k, v in self.tunnel.items() if k != self.controller_id }
+        count = 0
+        while not self._threads_loop_control.is_set():
+            read, _, _ = select([fd], [], [], TIMEOUT)
+            if read:
+                addr, msg = read.recvfrom(65535)
+                if msg.decode() == "HelloWorld":
+                    print ("Received message from Controller-{}".format(others[addr]['id']))
+                    others[addr]['exists'] = True
+                
+            if count % 5 == 0:
+                for o in others.keys():
+                    others[o]['exists'] = False
+                    fd.sendto(o, "HelloWorld".encode())
+            count += 1
+
         
     def real_network_message_handler(self):
         while (self._threads_loop_control):
@@ -178,7 +218,7 @@ class Controller():
                 pass
         except(KeyboardInterrupt):
             print (" - Keyboard Interrupted, exit...")
-            self._threads_loop_control = False
+            self._threads_loop_control.set()
             return
 
     

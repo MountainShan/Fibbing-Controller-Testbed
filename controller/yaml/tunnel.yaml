@@ -1,0 +1,8 @@
+"1":
+  "interface": eth0
+  "ip_addr": "173.1.0.2"
+  "port": 9999
+"2":
+  "interface": eth0
+  "ip_addr": "173.2.0.2"
+  "port": 9999

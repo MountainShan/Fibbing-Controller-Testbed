@@ -1,0 +1,10 @@
+"fake":
+    "interface": "eth0"
+    "router_id": 252
+    "ip": "192.2.0.1"
+    "mac": "aa:bb.cc:dd.e2:01"
+"real":
+    "interface": "eth1"
+    "router_id": 4
+    "ip": "192.2.0.2"
+    "mac": "aa:bb:cc:dd:e2:02"
